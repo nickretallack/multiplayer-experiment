@@ -25,6 +25,10 @@ define [
             player_list:player_list
             your_id:socket.id
 
+        io.sockets.emit 'joined',
+            player_id:socket.id
+            position:player.position.components
+
         socket.on 'disconnect', ->
             delete players[socket.id]
             # TODO: send leave message
@@ -34,6 +38,7 @@ define [
             io.sockets.emit 'moved', 
                 player_id:socket.id
                 position:data.position
+                console.log socket.id, data.position
 
 
     

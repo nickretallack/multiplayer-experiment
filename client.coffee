@@ -9,7 +9,6 @@ define [
     render = mustache.to_html
     socket = io.connect('http://localhost')
     your_id = null
-    player = null
 
     motions =
         "up": new Vector(0,-1)
@@ -24,7 +23,7 @@ define [
         constructor: (@model) ->
             @el = $ @template
             $(document.body).append @el
-        update: ->
+        control: ->
             motion = new Vector 0,0
             for key, vector of motions
                 if KEYS[key]
@@ -46,21 +45,26 @@ define [
         player = players[data.player_id]
         player.position.components = data.position
 
+    make_a_player = (id, position) ->
+        players[id] = player = new Player
+        player.position.components = position
+        player_views[id] = player_view = new PlayerView
+        player_view.model = player
+
     socket.on 'player-list', (data) ->
         your_id = data.your_id
         for id, position of data.player_list
-            players[id] = player = new Player
-            player.position.components = position
-            player_views[id] = player_view = new PlayerView
-            player_view.model = player
+            make_a_player id, position
 
-        your_player = players[your_id]
-        player = new PlayerView(your_player)
         setInterval (-> 
+            player_views[your_id].control()
             for view in _.values player_views
-                view.update()
                 view.draw()
         ), 10
+
+    socket.on 'joined', (data) ->
+        unless data.player_id is your_id
+            make_a_player data.player_id, data.position
 
     join_template = """<form>Choose a name:<input type="text"><button>Join</button></form>"""
     page_template = """
