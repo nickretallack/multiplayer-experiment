@@ -5,7 +5,6 @@ define [
     'cs!library/vector'
     'cs!player'
 ], ($, mustache, KEYS, Vector, Player) ->
-    console.log "WTF"
     render = mustache.to_html
     socket = io.connect('http://localhost')
     your_id = null
@@ -17,6 +16,32 @@ define [
         "right": new Vector(1,0)
 
     speed = 5
+
+    class Place
+        constructor: (@static, @active) ->
+        draw_static: ->
+            for item in _.values @static
+                item.draw()
+        draw: ->
+            for item in _.values @active
+                item.draw()
+
+    class Tree
+        template:"""<div class="tree"></div>"""
+        constructor: (@position) ->
+            @el = $ @template
+            $(document.body).append @el
+        draw: ->
+            @el.css @position.as_css()
+
+    trees = {
+        1:new Tree(new Vector(25,25))
+    }
+    players = {}
+    player_views = {}
+
+    place = new Place trees, player_views
+
 
     class PlayerView
         template:"""<div class="player"></div>"""
@@ -36,11 +61,6 @@ define [
             @el.css @model.position.as_css()
 
 
-    players = {}
-    player_views = {}
-
-    console.log socket
-
     socket.on 'moved', (data) ->
         player = players[data.player_id]
         player.position.components = data.position
@@ -56,10 +76,11 @@ define [
         for id, position of data.player_list
             make_a_player id, position
 
+        place.draw_static()
+
         setInterval (-> 
             player_views[your_id].control()
-            for view in _.values player_views
-                view.draw()
+            place.draw()
         ), 10
 
     socket.on 'joined', (data) ->
@@ -71,8 +92,3 @@ define [
         <div id="user-card"></div>
         <div id="game">
     """
-
-    #render(join_template) 
-
-
-    
