@@ -1,1 +1,1 @@
-require(['cs!client'], function(){console.log("WHAT")})
+require(['cs!client'])

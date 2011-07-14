@@ -38,7 +38,6 @@ define [
             io.sockets.emit 'moved', 
                 player_id:socket.id
                 position:data.position
-                console.log socket.id, data.position
 
 
     

@@ -1,8 +1,11 @@
 define [
     'cs!library/vector'
-], (Vector) ->
+    'cs!library/keydown'
+], (Vector, KEYS) ->
+
 
     class Player
         constructor: ->
             @position = new Vector(50,50)
+            @radius = 25
 
