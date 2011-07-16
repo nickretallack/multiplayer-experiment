@@ -1,14 +1,69 @@
 define [
     'library/jquery'
+    'library/underscore'
     'library/mustache'
     'cs!library/keydown'
     'cs!library/vector'
-    'cs!player'
+    'cs!models'
     'library/sylvester'
-], ($, mustache, KEYS, Vector, Player, sylvester) ->
+    'library/backbone'
+], ($, _, mustache, KEYS, Vector, models, sylvester, backbone) ->
+
+    Client = backbone.Model.extend
+        initialize: ->
+            _.bindAll this, 'run', 'step', 'control_current_player'
+
+            @current_player = null
+            @current_place = new models.Place
+            @socket = io.connect('http://localhost')
+            @players = new models.PlayerCollection
+            
+            @socket.on 'moved', (data) =>
+                player = players.get data.player_id
+                if player.id isnt @current_player.id
+                    player.set position:$V data.position...
+
+            @socket.on 'player-list', (data) =>
+                @players.reset data.player_list
+                @current_player = @players.get data.your_id
+                @current_place.set players:@players
+                for player in @current_place.players.toArray()
+                    player.place = @current_place
+                    player.client = this
+
+                @current_player.bind 'change:position', (model,position) ->
+                    console.log "move", position.elements
+                    client.socket.emit 'move', position:position.elements
+    
+                @run()
+
+            @socket.on 'joined', (data) =>
+                unless data.player_id is your_id
+                    make_a_player data.player_id, data.position
+
+        run: -> setInterval @step, 10
+
+        step: ->
+            @control_current_player()
+            
+        control_current_player: -> 
+            motion = $V 0,0
+            for key, vector of motions
+                if KEYS[key]
+                    motion = motion.add vector
+            @current_player.intend_motion motion
+
+
+    ClientView = backbone.View.extend
+        el:$(document.body)
+        initialize:
+            @current_player_id = null
+
+    window.client = new Client
+
+
     $V = sylvester.$V 
     render = mustache.to_html
-    socket = io.connect('http://localhost')
     your_id = null
     speed = 5
     motions =
@@ -73,58 +128,18 @@ define [
             @el = $ @template
             $(document.body).append @el
 
-        control: ->
-            motion = $V 0,0
-            for key, vector of motions
-                if KEYS[key]
-                    motion = motion.add vector
-            new_position = @model.position.add motion.scale(speed)
-
-            for item_view in @place.get_items()
-                if item_view != this
-                    item = item_view.model
-                    if new_position.distance(item.position) < @model.radius + item.radius
-
-                        #segment = @model.position.minus item.position
-                        #angle = segment.angle()
-                        
-                        console.log "Stuck"
-                        return
-                
-
-            unless new_position.equals @model.position
-                socket.emit 'move', position:new_position.elements
             
         draw: ->
             @el.css model_corner(@model).as_css()
 
 
-    socket.on 'moved', (data) ->
-        player = players[data.player_id]
-        player.position.elements = data.position
+    #make_a_player = (id, position) ->
+    #    players[id] = player = new models.Player
+    #    player.position.elements = position
+    #    player_views[id] = player_view = new PlayerView
+    #    player_view.model = player
+    #    place.add player_view
 
-    make_a_player = (id, position) ->
-        players[id] = player = new Player
-        player.position.elements = position
-        player_views[id] = player_view = new PlayerView
-        player_view.model = player
-        place.add player_view
-
-    socket.on 'player-list', (data) ->
-        your_id = data.your_id
-        for id, position of data.player_list
-            make_a_player id, position
-
-        place.draw_static()
-
-        setInterval (-> 
-            player_views[your_id].control()
-            place.draw()
-        ), 10
-
-    socket.on 'joined', (data) ->
-        unless data.player_id is your_id
-            make_a_player data.player_id, data.position
 
     join_template = """<form>Choose a name:<input type="text"><button>Join</button></form>"""
     page_template = """
