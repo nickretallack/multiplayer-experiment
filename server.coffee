@@ -22,9 +22,8 @@ define [
             player_list:player_list
             your_id:socket.id
 
-        #io.sockets.emit 'joined',
-        #    player_id:socket.id
-        #    position:player.position.elements
+        io.sockets.emit 'joined',
+            player.toJSON()
 
         socket.on 'disconnect', ->
             players.remove player
