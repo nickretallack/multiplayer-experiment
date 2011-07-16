@@ -4,16 +4,18 @@ define [
     'cs!library/keydown'
     'cs!library/vector'
     'cs!player'
-], ($, mustache, KEYS, Vector, Player) ->
+    'library/sylvester'
+], ($, mustache, KEYS, Vector, Player, sylvester) ->
+    $V = sylvester.$V 
     render = mustache.to_html
     socket = io.connect('http://localhost')
     your_id = null
     speed = 5
     motions =
-        "up": new Vector(0,-1)
-        "down": new Vector(0,1)
-        "left": new Vector(-1,0)
-        "right": new Vector(1,0)
+        "up": $V(0,-1)
+        "down": $V(0,1)
+        "left": $V(-1,0)
+        "right": $V(1,0)
 
 
     class Place
@@ -54,7 +56,7 @@ define [
             @el.css model_corner(@model).as_css()
 
     trees = [
-        new Tree(new Vector(200,200))
+        new Tree($V(200,200))
     ]
     players = {}
     player_views = {}
@@ -63,7 +65,7 @@ define [
 
 
     model_corner = (model) ->
-        model.position.minus new Vector(model.radius, model.radius)
+        model.position.minus $V(model.radius, model.radius)
 
     class PlayerView
         template:"""<div class="player"></div>"""
@@ -72,7 +74,7 @@ define [
             $(document.body).append @el
 
         control: ->
-            motion = new Vector 0,0
+            motion = $V 0,0
             for key, vector of motions
                 if KEYS[key]
                     motion = motion.add vector
@@ -82,12 +84,16 @@ define [
                 if item_view != this
                     item = item_view.model
                     if new_position.distance(item.position) < @model.radius + item.radius
+
+                        #segment = @model.position.minus item.position
+                        #angle = segment.angle()
+                        
                         console.log "Stuck"
                         return
                 
 
             unless new_position.equals @model.position
-                socket.emit 'move', position:new_position.components
+                socket.emit 'move', position:new_position.elements
             
         draw: ->
             @el.css model_corner(@model).as_css()
@@ -95,11 +101,11 @@ define [
 
     socket.on 'moved', (data) ->
         player = players[data.player_id]
-        player.position.components = data.position
+        player.position.elements = data.position
 
     make_a_player = (id, position) ->
         players[id] = player = new Player
-        player.position.components = position
+        player.position.elements = position
         player_views[id] = player_view = new PlayerView
         player_view.model = player
         place.add player_view

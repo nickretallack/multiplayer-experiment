@@ -1,11 +1,12 @@
 define [
     'cs!library/vector'
-    'cs!library/keydown'
-], (Vector, KEYS) ->
+    'library/sylvester'
+], (Vector, sylvester) ->
+    $V = sylvester.$V
 
 
     class Player
         constructor: ->
-            @position = new Vector(50,50)
+            @position = $V 50,50
             @radius = 25
 

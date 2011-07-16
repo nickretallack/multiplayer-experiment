@@ -2,7 +2,6 @@ define [
     'socket.io'
     'express'
     'cs!player'
-    'underscore'
 ], (socketio, express, Player) ->
     app = express.createServer()
     app.use express.static '.'
@@ -17,7 +16,7 @@ define [
 
         player_list = {}
         for id, player of players
-            player_list[id] = player.position.components
+            player_list[id] = player.position.elements
 
         console.log player_list
 
@@ -27,14 +26,14 @@ define [
 
         io.sockets.emit 'joined',
             player_id:socket.id
-            position:player.position.components
+            position:player.position.elements
 
         socket.on 'disconnect', ->
             delete players[socket.id]
             # TODO: send leave message
 
         socket.on 'move', (data) ->
-            player.position.components = data.position
+            player.position.elements = data.position
             io.sockets.emit 'moved', 
                 player_id:socket.id
                 position:data.position
