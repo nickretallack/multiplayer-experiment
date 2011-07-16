@@ -26,6 +26,7 @@ define [
 
         socket.on 'disconnect', ->
             players.remove player
+            io.sockets.emit 'left', player.id
             # TODO: send leave message
 
         socket.on 'move', (data) ->

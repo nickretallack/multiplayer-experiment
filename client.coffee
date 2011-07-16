@@ -59,6 +59,12 @@ define [
                     @current_place.players.add player
                     @players.add player
 
+            @socket.on 'left', (player_id) =>
+                player = @players.get player_id
+                player.destroy()
+                #@current_place.players.remove(player)
+                #@players.remove(player)
+
         run: -> 
             @trigger 'run'
             setInterval @step, 10
@@ -108,12 +114,16 @@ define [
                 player_view.render()
                 $(@el).append player_view.el
 
+
     PlayerView = backbone.View.extend
         className:'player'
         initialize: ->
             _.bindAll this, 'update_position'
             @update_position()
             @model.bind 'change:position', @update_position
+            @model.bind 'destroy', =>
+                console.log "BYE"
+                @remove()
 
         update_position: ->
             $(@el).css model_corner(@model).as_css()
