@@ -21,6 +21,7 @@ define [
             player_list:players.toJSON()
             your_id:socket.id
 
+        console.log "JOINED", JSON.stringify(player.toJSON()), socket
         io.sockets.emit 'joined', player.toJSON()
 
         socket.on 'disconnect', ->

@@ -77,14 +77,26 @@ define [
     ClientView = backbone.View.extend
         el:$(document.body)
         initialize: ->
+            _.bindAll this, 'center', 'render'
             @place_view = new PlaceView model:@model.current_place
             @model.bind 'run', =>
-                @model.current_player.bind 'change:position', =>
-                    @place_view.el.css model_corner(@model.current_player).as_css()
+                @model.current_player.bind 'change:position', @center
+                @center()
+            $(window).resize @center
+
+        render: ->
+            @place_view.render()
+            $(document.body).append @place_view.el
+
+        center: ->
+            window_size = $V $(document.body).innerWidth(), $(document.body).innerHeight()
+            corner = @model.current_player.position.scale(-1)
+            center = window_size.scale(0.5)
+            $(@place_view.el).css center.plus(corner).as_css()
                 
 
     PlaceView = backbone.View.extend
-        el:$(document.body)
+        className:'place'
         initialize: ->
             for obstacle in @model.obstacles.toArray()
                 obstacle_view = new ObstacleView model:obstacle
@@ -115,4 +127,5 @@ define [
 
     client = new Client
     view = new ClientView model:client
+    view.render()
 
