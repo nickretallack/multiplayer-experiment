@@ -37,7 +37,7 @@ define [
             
             @socket.on 'moved', (data) =>
                 unless data.player_id is @current_player.id
-                    player = players.get data.player_id
+                    player = @players.get data.player_id
                     player.set position:$V data.position...
 
             @socket.on 'player-list', (data) =>
@@ -55,9 +55,13 @@ define [
 
             @socket.on 'joined', (data) =>
                 unless data.id is @current_player.id
-                    @players.add data
+                    player = new models.Player models.Player.parse(data)
+                    @current_place.players.add player
+                    @players.add player
 
-        run: -> setInterval @step, 10
+        run: -> 
+            @trigger 'run'
+            setInterval @step, 10
 
         step: ->
             @control_current_player()
@@ -74,6 +78,10 @@ define [
         el:$(document.body)
         initialize: ->
             @place_view = new PlaceView model:@model.current_place
+            @model.bind 'run', =>
+                @model.current_player.bind 'change:position', =>
+                    @place_view.el.css model_corner(@model.current_player).as_css()
+                
 
     PlaceView = backbone.View.extend
         el:$(document.body)
@@ -87,9 +95,6 @@ define [
                 player_view = new PlayerView model:player
                 player_view.render()
                 $(@el).append player_view.el
-                
-            #for player in @model.players.toArray()
-            #    player_view = new PlayerView model:player
 
     PlayerView = backbone.View.extend
         className:'player'

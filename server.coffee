@@ -2,7 +2,9 @@ define [
     'socket.io'
     'express'
     'cs!models'
-], (socketio, express, models) ->
+    'library/sylvester'
+], (socketio, express, models, sylvester) ->
+    $V = sylvester.$V
     app = express.createServer()
     app.use express.static '.'
 
@@ -13,24 +15,20 @@ define [
     io.sockets.on 'connection', (socket) ->
         player = new models.Player
         player.set id:socket.id
-        console.log socket.id
         players.add player
-        player_list = players.toJSON()
-        
-        console.log player_list
+
         socket.emit 'player-list', 
-            player_list:player_list
+            player_list:players.toJSON()
             your_id:socket.id
 
-        io.sockets.emit 'joined',
-            player.toJSON()
+        io.sockets.emit 'joined', player.toJSON()
 
         socket.on 'disconnect', ->
             players.remove player
             # TODO: send leave message
 
         socket.on 'move', (data) ->
-            player.position.elements = data.position
+            player.set position:$V data.position...
             io.sockets.emit 'moved', 
                 player_id:socket.id
                 position:data.position
