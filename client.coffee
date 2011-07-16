@@ -16,12 +16,22 @@ define [
         "left": $V(-1,0)
         "right": $V(1,0)
 
+    model_corner = (model) ->
+        model.position.minus $V(model.radius, model.radius)
+
+    home = new models.Place
+    home.obstacles.add [
+        {position: $V(200,200)},
+        {position: $V(300,200)}
+    ]
+
+
     Client = backbone.Model.extend
         initialize: ->
             _.bindAll this, 'run', 'step', 'control_current_player'
 
             @current_player = null
-            @current_place = new models.Place
+            @current_place = home
             @socket = io.connect('http://localhost')
             @players = new models.PlayerCollection
             
@@ -68,6 +78,11 @@ define [
     PlaceView = backbone.View.extend
         el:$(document.body)
         initialize: ->
+            for obstacle in @model.obstacles.toArray()
+                obstacle_view = new ObstacleView model:obstacle
+                obstacle_view.render()
+                $(@el).append obstacle_view.el
+
             @model.players.bind 'add', (player) =>
                 player_view = new PlayerView model:player
                 player_view.render()
@@ -88,9 +103,11 @@ define [
             
         render: ->
 
+    ObstacleView = backbone.View.extend
+        className:'tree'
+        render: ->
+            $(@el).css model_corner(@model).as_css()
+
     client = new Client
     view = new ClientView model:client
-
-    model_corner = (model) ->
-        model.position.minus $V(model.radius, model.radius)
 

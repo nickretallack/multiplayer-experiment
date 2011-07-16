@@ -6,6 +6,12 @@ define [
 ], (Vector, sylvester, backbone, _) ->
     $V = sylvester.$V
 
+    Obstacle = backbone.Model.extend
+        initialize: ->
+        defaults:
+            position: $V 100,100
+            radius:15
+
     Player = backbone.Model.extend
         initialize: ->
             _.bindAll this, 'intend_motion'
@@ -16,7 +22,7 @@ define [
         intend_motion: (motion) ->
             new_position = @position.add motion.scale(@speed)
             obstacles = @place.collide this, new_position
-            unless obstacles or new_position.equals @position
+            unless obstacles.length or new_position.equals @position
                 @set position:new_position
     ,
         parse: (attributes) ->
@@ -28,22 +34,26 @@ define [
     PlayerCollection = backbone.Collection.extend
         model:Player
 
+    ObstacleCollection = backbone.Collection.extend
+        model:Obstacle
+
     Place = backbone.Model.extend
         initialize: ->
             _.bindAll this, 'collide'
             @players = new PlayerCollection
+            @obstacles = new ObstacleCollection
 
         collide: (player, new_position) ->
-            for item in @players.toArray()
+            hits = []
+            for item in @obstacles.toArray()
                 if item.id != player.id and new_position.distance(item.position) < player.radius + item.radius
-                    console.log "Stuck"
-                    return [item]
+                    hits.push item
+            return hits
             
         
-
-
-
     Player:Player
     PlayerCollection:PlayerCollection
     Place:Place
+    Obstacle:Obstacle
+    ObstacleCollection:ObstacleCollection
 
