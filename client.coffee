@@ -84,7 +84,7 @@ define [
             @model.bind 'change:position', @update_position
 
         update_position: ->
-            $(@el).css @model.position.as_css()
+            $(@el).css model_corner(@model).as_css()
             
         render: ->
 
