@@ -34,7 +34,7 @@ define [
             @current_place = home
             @socket = io.connect('http://localhost')
             @players = new models.PlayerCollection
-            
+
             @socket.on 'moved', (data) =>
                 unless data.player_id is @current_player.id
                     player = @players.get data.player_id
@@ -42,15 +42,11 @@ define [
 
             @socket.on 'player-list', (data) =>
                 @players.add data.player_list
-                @current_player = @players.get data.your_id
                 @current_place.players.add @players.toArray()
                 for player in @current_place.players.toArray()
                     player.place = @current_place
                     player.client = this
 
-                @current_player.bind 'change:position', (model,position) ->
-                    client.socket.emit 'move', position:position.elements
-    
                 @run()
 
             @socket.on 'joined', (data) =>
@@ -58,19 +54,29 @@ define [
                     player = new models.Player models.Player.parse(data)
                     @current_place.players.add player
                     @players.add player
+                    @current_player.place = @current_place
+                    @current_player.client = this
 
             @socket.on 'left', (player_id) =>
                 player = @players.get player_id
                 player.destroy()
-                #@current_place.players.remove(player)
-                #@players.remove(player)
+
+            @socket.on 'recognized', (data) =>
+                @current_player = new models.Player id:data.player_id
+                @current_place.players.add @current_player
+                @players.add @current_player
+                @current_player.place = @current_place
+                @current_player.client = this
+                @current_player.bind 'change:position', (model,position) ->
+                    client.socket.volatile.emit 'move', position:position.elements
+                @trigger 'recognized'
 
         run: -> 
             @trigger 'run'
             setInterval @step, 10
 
         step: ->
-            @control_current_player()
+            @control_current_player() if @current_player
             
         control_current_player: -> 
             motion = $V 0,0
@@ -79,26 +85,60 @@ define [
                     motion = motion.add vector
             @current_player.intend_motion motion
 
+        login: (credentials) ->
+            @socket.emit 'login', credentials
 
     ClientView = backbone.View.extend
         el:$(document.body)
+        template: """
+        <nav>
+            <label for="name">Name: <input id="name" value="joe"></label>
+            <label for="password">Password: <input id="password" value="stuff" type="password"></label>
+            <button id="login">Return</button>
+            <button id="register">Begin Anew</button>
+        </nav>
+        <div id="play-area"></div>
+        """
         initialize: ->
-            _.bindAll this, 'center', 'render'
+            _.bindAll this, 'center', 'render', 'set_camera_focus', 'login', 'register'
             @place_view = new PlaceView model:@model.current_place
-            @model.bind 'run', =>
-                @model.current_player.bind 'change:position', @center
-                @center()
             $(window).resize @center
+            @model.bind 'recognized', =>
+                @set_camera_focus @model.current_player
+
+        events:
+            "click #login":"login"
+            "click #register":"register"
+
+        login: (event) ->
+            event.preventDefault()
+            name = @$('#name').val()
+            password = @$('#password').val()
+            if name and password
+                @model.login
+                    name:name
+                    password:password
+
+        register: ->
+            @login()
 
         render: ->
+            $(@el).append(@template)
             @place_view.render()
-            $(document.body).append @place_view.el
+            @$('#play-area').append @place_view.el
+
+        set_camera_focus: (model) ->
+            @camera_focus.unbind('change:position', @center) if @camera_focus
+            @camera_focus = model
+            @camera_focus.bind 'change:position', @center
+            @center()
 
         center: ->
-            window_size = $V $(document.body).innerWidth(), $(document.body).innerHeight()
-            corner = @model.current_player.position.scale(-1)
-            center = window_size.scale(0.5)
-            $(@place_view.el).css center.plus(corner).as_css()
+            if @camera_focus
+                window_size = $V $(document.body).innerWidth(), $(document.body).innerHeight()
+                corner = @model.current_player.position.scale(-1)
+                center = window_size.scale(0.5)
+                $(@place_view.el).css center.plus(corner).as_css()
                 
 
     PlaceView = backbone.View.extend
