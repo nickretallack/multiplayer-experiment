@@ -32,7 +32,7 @@ define [
 
             @current_player = null
             @current_place = home
-            @socket = io.connect('http://localhost')
+            @socket = io.connect('/')
             @players = new models.PlayerCollection
 
             @socket.on 'moved', (data) =>
