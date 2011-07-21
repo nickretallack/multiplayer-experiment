@@ -36,7 +36,7 @@ define [
             @players = new models.PlayerCollection
 
             @socket.on 'moved', (data) =>
-                unless data.player_id is @current_player.id
+                unless data.player_id is @current_player?.id
                     player = @players.get data.player_id
                     player.set position:$V data.position...
 
@@ -50,12 +50,12 @@ define [
                 @run()
 
             @socket.on 'joined', (data) =>
-                unless data.id is @current_player.id
+                unless data.id is @current_player?.id
                     player = new models.Player models.Player.parse(data)
                     @current_place.players.add player
                     @players.add player
-                    @current_player.place = @current_place
-                    @current_player.client = this
+                    player.place = @current_place
+                    player.client = this
 
             @socket.on 'left', (player_id) =>
                 player = @players.get player_id
@@ -68,7 +68,7 @@ define [
                 @current_player.place = @current_place
                 @current_player.client = this
                 @current_player.bind 'change:position', (model,position) ->
-                    client.socket.volatile.emit 'move', position:position.elements
+                    client.socket.emit 'move', position:position.elements
                 @trigger 'recognized'
 
         run: -> 

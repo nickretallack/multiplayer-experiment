@@ -36,7 +36,7 @@ define [
 
             socket.on 'move', (data) ->
                 player.set position:$V data.position...
-                socket.broadcast.emit 'moved', 
+                io.sockets.emit 'moved', 
                     player_id:socket.id
                     position:data.position
     
