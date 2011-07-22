@@ -28,15 +28,15 @@ define [
             # Wonder if sockets would make streaming easier or not.  You can definitely stream with ajax.
             socket.emit 'recognized'
                 player_id:socket.id
-            io.sockets.emit 'joined', player.toJSON()
+            socket.broadcast.emit 'joined', player.toJSON()
 
             socket.once 'disconnect', ->
                 players.remove player
-                io.sockets.emit 'left', player.id
+                socket.broadcast.emit 'left', player.id
 
             socket.on 'move', (data) ->
                 player.set position:$V data.position...
-                io.sockets.emit 'moved', 
+                socket.broadcast.emit 'moved', 
                     player_id:socket.id
                     position:data.position
     

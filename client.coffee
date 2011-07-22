@@ -36,9 +36,8 @@ define [
             @players = new models.PlayerCollection
 
             @socket.on 'moved', (data) =>
-                unless data.player_id is @current_player?.id
-                    player = @players.get data.player_id
-                    player.set position:$V data.position...
+                player = @players.get data.player_id
+                player.set position:$V data.position...
 
             @socket.on 'player-list', (data) =>
                 @players.add data.player_list
@@ -50,12 +49,11 @@ define [
                 @run()
 
             @socket.on 'joined', (data) =>
-                unless data.id is @current_player?.id
-                    player = new models.Player models.Player.parse(data)
-                    @current_place.players.add player
-                    @players.add player
-                    player.place = @current_place
-                    player.client = this
+                player = new models.Player models.Player.parse(data)
+                @current_place.players.add player
+                @players.add player
+                player.place = @current_place
+                player.client = this
 
             @socket.on 'left', (player_id) =>
                 player = @players.get player_id
