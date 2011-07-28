@@ -24,9 +24,13 @@ define [
             obstacles = @place.collide this, new_position
             unless obstacles.length or new_position.equals @position
                 @set position:new_position
+        toJSON: ->
+            json = backbone.Model::toJSON.apply(this)
+            json.position = json.position.elements
+            json
     ,
         parse: (attributes) ->
-            attributes['position'] = $V attributes['position']['elements']...
+            attributes['position'] = $V attributes['position']...
             attributes
 
 

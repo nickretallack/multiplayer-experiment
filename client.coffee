@@ -86,6 +86,9 @@ define [
         login: (credentials) ->
             @socket.emit 'login', credentials
 
+        register: (credentials) ->
+            @socket.emit 'register', credentials
+
     ClientView = backbone.View.extend
         el:$(document.body)
         template: """
@@ -98,7 +101,7 @@ define [
         <div id="play-area"></div>
         """
         initialize: ->
-            _.bindAll this, 'center', 'render', 'set_camera_focus', 'login', 'register'
+            _.bindAll this, 'center', 'render', 'set_camera_focus', 'login', 'register', 'process_login_form'
             @place_view = new PlaceView model:@model.current_place
             $(window).resize @center
             @model.bind 'recognized', =>
@@ -108,17 +111,26 @@ define [
             "click #login":"login"
             "click #register":"register"
 
-        login: (event) ->
-            event.preventDefault()
+        process_login_form: ->
             name = @$('#name').val()
             password = @$('#password').val()
+            [name,password]
+
+        login: (event) ->
+            event.preventDefault()
+            [name, password] = @process_login_form()
             if name and password
                 @model.login
                     name:name
                     password:password
 
         register: ->
-            @login()
+            event.preventDefault()
+            [name, password] = @process_login_form()
+            if name and password
+                @model.register
+                    name:name
+                    password:password
 
         render: ->
             $(@el).append(@template)
