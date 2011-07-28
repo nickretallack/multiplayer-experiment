@@ -90,7 +90,7 @@ define [
                 else
                     failure(response.message)
 
-        register: (credentials) ->
+        register: (credentials, success, failure) ->
             @socket.emit 'register', credentials, (response) ->
                 if response.type is 'success'
                     success()
@@ -99,12 +99,15 @@ define [
 
     LoginPanel = backbone.View.extend
         template: """
+            <h1>Some Game!</h1>
+            <p>Choose a name and password to start.</p>
             <label for="name">Name: 
                 <input id="name" value="joe"></label>
             <label for="password">Password: 
                 <input id="password" value="stuff" type="password"></label>
-            <button id="login">Return</button>
-            <button id="register">Begin Anew</button>
+            <button id="register">I'm New</button>
+            <button id="login">Remember Me!</button>
+            <p id="message"></p>
         """
 
         events:
@@ -112,7 +115,7 @@ define [
             "click #register":"register"
 
         initialize: ->
-            _.bindAll this, 'login', 'register', 'process_login_form'
+            _.bindAll this, 'login', 'register', 'process_login_form', 'respond'
 
         render: ->
             $(@el).append(@template)
@@ -121,18 +124,22 @@ define [
         process_login_form: ->
             name = @$('#name').val()
             password = @$('#password').val()
+            if not (name and password)
+                @respond "Please enter both a name and a password"
             [name,password]
+
+        respond: (message) ->
+            @$('#message').text message
 
         login: (event) ->
             event.preventDefault()
             [name, password] = @process_login_form()
-            console.log "LOGGING IN"
             if name and password
                 @model.login
                     name:name
                     password:password
-                , (-> console.log "YAY")
-                , ((message) -> console.log message)
+                , (=> @respond "Logged in as #{name}!")
+                , ((message) => @respond message)
        
 
         register: ->
@@ -142,6 +149,8 @@ define [
                 @model.register
                     name:name
                     password:password
+                , (=> @respond "Registered as #{name}")
+                , ((message) => @respond message)
 
 
     ClientView = backbone.View.extend
@@ -165,7 +174,8 @@ define [
             @login_panel.el = @$('#login-panel')
             @login_panel.render()
             @place_view.render()
-            @$('#play-area').append @place_view.el
+            @play_area = @$('#play-area')
+            @play_area.append @place_view.el
 
         set_camera_focus: (model) ->
             @camera_focus.unbind('change:position', @center_camera) if @camera_focus
@@ -175,7 +185,7 @@ define [
 
         center_camera: ->
             if @camera_focus
-                window_size = $V $(document.body).innerWidth(), $(document.body).innerHeight()
+                window_size = $V @play_area.innerWidth(), @play_area.innerHeight()
                 corner = @model.current_player.position.scale(-1)
                 center = window_size.scale(0.5)
                 $(@place_view.el).css center.plus(corner).as_css()

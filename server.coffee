@@ -30,16 +30,15 @@ define [
                 recognized player, next if player
             , (error) ->
                 if error.message is 'duplicate key value violates unique constraint "credentials_login_key"'
-                    console.log "Couldn't register because that name is taken"
+                    next type:'error', message: "Couldn't register because that name is taken"
 
         # NOTE: in the future this wont be 'once'.  You should be able to switch users without reconnecting
         socket.on 'login', (credentials, next) -> 
             player = database.authenticate credentials.name, credentials.password, (player) ->
                 console.log "Logged in as", JSON.stringify player
                 if player
-                    recognized player
+                    recognized player, next
                 else
-                    console.log "Authentication failed"
                     next type:'error', message:"Auth Failed"
 
         recognized = (player, next) ->
@@ -61,5 +60,7 @@ define [
                 socket.broadcast.emit 'moved', 
                     player_id:player.id
                     position:data.position
+
+            next type:'success'
     
     app.listen 8085
