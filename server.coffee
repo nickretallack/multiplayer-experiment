@@ -24,24 +24,25 @@ define [
         socket.emit 'player-list', 
             player_list:players.toJSON()
 
-        socket.on 'register', (credentials) ->
+        socket.on 'register', (credentials, next) ->
             player = database.create_player credentials.name, credentials.password, (player) ->
                 console.log "registered as", JSON.stringify player
-                recognized player if player
+                recognized player, next if player
             , (error) ->
                 if error.message is 'duplicate key value violates unique constraint "credentials_login_key"'
                     console.log "Couldn't register because that name is taken"
 
         # NOTE: in the future this wont be 'once'.  You should be able to switch users without reconnecting
-        socket.on 'login', (credentials) -> 
+        socket.on 'login', (credentials, next) -> 
             player = database.authenticate credentials.name, credentials.password, (player) ->
                 console.log "Logged in as", JSON.stringify player
                 if player
                     recognized player
                 else
                     console.log "Authentication failed"
+                    next type:'error', message:"Auth Failed"
 
-        recognized = (player) ->
+        recognized = (player, next) ->
             players.add player
 
             # NOTE: in the future this should also send you the place you're in...

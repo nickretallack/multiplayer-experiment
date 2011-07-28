@@ -83,33 +83,40 @@ define [
                     motion = motion.add vector
             @current_player.intend_motion motion
 
-        login: (credentials) ->
-            @socket.emit 'login', credentials
+        login: (credentials, success, failure) ->
+            @socket.emit 'login', credentials, (response) ->
+                if response.type is 'success'
+                    success()
+                else
+                    failure(response.message)
 
         register: (credentials) ->
-            @socket.emit 'register', credentials
+            @socket.emit 'register', credentials, (response) ->
+                if response.type is 'success'
+                    success()
+                else
+                    failure(response.message)
 
-    ClientView = backbone.View.extend
-        el:$(document.body)
+    LoginPanel = backbone.View.extend
         template: """
-        <nav>
-            <label for="name">Name: <input id="name" value="joe"></label>
-            <label for="password">Password: <input id="password" value="stuff" type="password"></label>
+            <label for="name">Name: 
+                <input id="name" value="joe"></label>
+            <label for="password">Password: 
+                <input id="password" value="stuff" type="password"></label>
             <button id="login">Return</button>
             <button id="register">Begin Anew</button>
-        </nav>
-        <div id="play-area"></div>
         """
-        initialize: ->
-            _.bindAll this, 'center', 'render', 'set_camera_focus', 'login', 'register', 'process_login_form'
-            @place_view = new PlaceView model:@model.current_place
-            $(window).resize @center
-            @model.bind 'recognized', =>
-                @set_camera_focus @model.current_player
 
         events:
             "click #login":"login"
             "click #register":"register"
+
+        initialize: ->
+            _.bindAll this, 'login', 'register', 'process_login_form'
+
+        render: ->
+            $(@el).append(@template)
+            @delegateEvents()
 
         process_login_form: ->
             name = @$('#name').val()
@@ -119,10 +126,14 @@ define [
         login: (event) ->
             event.preventDefault()
             [name, password] = @process_login_form()
+            console.log "LOGGING IN"
             if name and password
                 @model.login
                     name:name
                     password:password
+                , (-> console.log "YAY")
+                , ((message) -> console.log message)
+       
 
         register: ->
             event.preventDefault()
@@ -132,18 +143,37 @@ define [
                     name:name
                     password:password
 
+
+    ClientView = backbone.View.extend
+        el:$(document.body)
+        template: """
+        <nav id="login-panel">
+        </nav>
+        <div id="play-area"></div>
+        """
+
+        initialize: ->
+            _.bindAll this, 'center_camera', 'render', 'set_camera_focus'
+            @place_view = new PlaceView model:@model.current_place
+            @login_panel = new LoginPanel model:@model
+            @model.bind 'recognized', =>
+                @set_camera_focus @model.current_player
+            $(window).resize @center_camera # should this be here?
+
         render: ->
             $(@el).append(@template)
+            @login_panel.el = @$('#login-panel')
+            @login_panel.render()
             @place_view.render()
             @$('#play-area').append @place_view.el
 
         set_camera_focus: (model) ->
-            @camera_focus.unbind('change:position', @center) if @camera_focus
+            @camera_focus.unbind('change:position', @center_camera) if @camera_focus
             @camera_focus = model
-            @camera_focus.bind 'change:position', @center
-            @center()
+            @camera_focus.bind 'change:position', @center_camera
+            @center_camera()
 
-        center: ->
+        center_camera: ->
             if @camera_focus
                 window_size = $V $(document.body).innerWidth(), $(document.body).innerHeight()
                 corner = @model.current_player.position.scale(-1)
