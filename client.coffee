@@ -11,8 +11,8 @@ define [
     $V = sylvester.$V 
     render = mustache.to_html
     motions =
-        "up": $V(0,-1)
-        "down": $V(0,1)
+        "up": $V(0,1)
+        "down": $V(0,-1)
         "left": $V(-1,0)
         "right": $V(1,0)
 
@@ -21,6 +21,7 @@ define [
 
     home = new models.Place
     home.obstacles.add [
+        {position: $V(0,0)},
         {position: $V(200,200)},
         {position: $V(300,200)}
     ]
@@ -176,6 +177,7 @@ define [
             @place_view.render()
             @play_area = @$('#play-area')
             @play_area.append @place_view.el
+            @edit()
 
         set_camera_focus: (model) ->
             @camera_focus.unbind('change:position', @center_camera) if @camera_focus
@@ -185,11 +187,34 @@ define [
 
         center_camera: ->
             if @camera_focus
-                window_size = $V @play_area.innerWidth(), @play_area.innerHeight()
-                corner = @model.current_player.position.scale(-1)
-                center = window_size.scale(0.5)
-                $(@place_view.el).css center.plus(corner).as_css()
+                @focus = @model.current_player.position
+                $(@place_view.el).css @get_window_center().minus(@focus).as_css()
+    
+        get_window_center: ->
+            $V(@play_area.innerWidth(), @play_area.innerHeight()).scale(0.5)
                 
+        edit: ->
+            @editing = no
+            $(@play_area).mousedown (event) =>
+                event.preventDefault()
+                @editing = yes
+
+            $(window).mouseup (event) =>
+                event.preventDefault()
+                @editing = no
+
+            $(@play_area).mousemove (event) =>
+                event.preventDefault()
+                if @editing
+                    picker_in_window = $V event.clientX, $(window).height() - event.clientY
+                    play_area_offset = @play_area.offset()
+                    play_area_origin = $V play_area_offset.left, $(window).height() - (@play_area.height() + play_area_offset.top)
+                    picker_in_play_area = picker_in_window.minus(play_area_origin)
+                    place_origin_in_play_area = @get_window_center().minus(@focus)
+                    picker_in_place = picker_in_play_area.minus(place_origin_in_play_area)
+                    node = $('<div class="tree"></div>')
+                    node.css picker_in_place.as_css()
+                    $(@place_view.el).append node
 
     PlaceView = backbone.View.extend
         className:'place'
@@ -203,7 +228,6 @@ define [
                 player_view = new PlayerView model:player
                 player_view.render()
                 $(@el).append player_view.el
-
 
     PlayerView = backbone.View.extend
         className:'player'
