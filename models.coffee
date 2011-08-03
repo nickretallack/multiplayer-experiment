@@ -11,6 +11,10 @@ define [
         defaults:
             position: $V 100,100
             radius:15
+        toJSON: ->
+            json = backbone.Model::toJSON.apply(this)
+            json.position = json.position.elements
+            json
 
     Player = backbone.Model.extend
         initialize: ->
@@ -28,12 +32,10 @@ define [
             json = backbone.Model::toJSON.apply(this)
             json.position = json.position.elements
             json
-    ,
-        parse: (attributes) ->
-            attributes['position'] = $V attributes['position']...
-            attributes
-
-
+    
+    parse_it = (attributes) ->
+        attributes['position'] = $V attributes['position']...
+        attributes
 
     PlayerCollection = backbone.Collection.extend
         model:Player
@@ -60,4 +62,5 @@ define [
     Place:Place
     Obstacle:Obstacle
     ObstacleCollection:ObstacleCollection
+    parse_it:parse_it
 

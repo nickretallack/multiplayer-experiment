@@ -33,6 +33,7 @@ define [
 
             @current_player = null
             @current_place = home
+
             @socket = io.connect('/')
             @players = new models.PlayerCollection
 
@@ -41,7 +42,9 @@ define [
                 player.set position:$V data.position...
 
             @socket.on 'player-list', (data) =>
-                @players.add data.player_list
+                for player_data in data.player_list
+                    player = new models.Player models.parse_it(player_data)
+                    @players.add player
                 @current_place.players.add @players.toArray()
                 for player in @current_place.players.toArray()
                     player.place = @current_place
@@ -50,7 +53,7 @@ define [
                 @run()
 
             @socket.on 'joined', (data) =>
-                player = new models.Player models.Player.parse(data)
+                player = new models.Player models.parse_it(data)
                 @current_place.players.add player
                 @players.add player
                 player.place = @current_place
@@ -69,6 +72,12 @@ define [
                 @current_player.bind 'change:position', (model,position) ->
                     client.socket.emit 'move', position:position.elements
                 @trigger 'recognized'
+
+            @current_place.obstacles.bind 'add', (obstacle) =>
+                @socket.emit 'added-obstacle', obstacle.toJSON()
+            @socket.on 'added-obstacle', (obstacle) =>
+                obstacle = new models.Obstacle models.parse_it(obstacle)
+                @current_place.obstacles.add obstacle
 
         run: -> 
             @trigger 'run'

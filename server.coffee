@@ -62,5 +62,9 @@ define [
                     position:data.position
 
             next type:'success'
+        
+        socket.on 'added-obstacle', (obstacle) ->
+            # TODO: do something with it?  idk.  For now just volley
+            socket.broadcast.emit 'added-obstacle', obstacle
     
     app.listen 8085
