@@ -212,22 +212,30 @@ define [
                     picker_in_play_area = picker_in_window.minus(play_area_origin)
                     place_origin_in_play_area = @get_window_center().minus(@focus)
                     picker_in_place = picker_in_play_area.minus(place_origin_in_play_area)
-                    node = $('<div class="tree"></div>')
-                    node.css picker_in_place.as_css()
-                    $(@place_view.el).append node
+                    @model.current_place.obstacles.add position:picker_in_place
+                    #node = $('<div class="tree"></div>')
+                    #node.css picker_in_place.as_css()
+                    #$(@place_view.el).append node
 
     PlaceView = backbone.View.extend
         className:'place'
         initialize: ->
+            _.bindAll this, 'add_obstacle'
             for obstacle in @model.obstacles.toArray()
-                obstacle_view = new ObstacleView model:obstacle
-                obstacle_view.render()
-                $(@el).append obstacle_view.el
+                @add_obstacle obstacle
+            @model.obstacles.bind 'add', (obstacle) =>
+                @add_obstacle obstacle
 
             @model.players.bind 'add', (player) =>
                 player_view = new PlayerView model:player
                 player_view.render()
                 $(@el).append player_view.el
+
+        add_obstacle: (obstacle) ->
+            obstacle_view = new ObstacleView model:obstacle
+            obstacle_view.render()
+            $(@el).append obstacle_view.el
+            
 
     PlayerView = backbone.View.extend
         className:'player'
