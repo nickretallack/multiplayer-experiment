@@ -24,7 +24,7 @@ define [
         {position: $V(0,0)},
         {position: $V(200,200)},
         {position: $V(300,200)}
-    ]
+    ], silent:true
 
 
     Client = backbone.Model.extend
@@ -172,11 +172,12 @@ define [
         """
 
         initialize: ->
-            _.bindAll this, 'center_camera', 'render', 'set_camera_focus'
+            _.bindAll this, 'center_camera', 'render', 'set_camera_focus', 'add_tree_from_mouse'
             @place_view = new PlaceView model:@model.current_place
             @login_panel = new LoginPanel model:@model
             @model.bind 'recognized', =>
                 @set_camera_focus @model.current_player
+                @edit()
             $(window).resize @center_camera # should this be here?
 
         render: ->
@@ -186,7 +187,6 @@ define [
             @place_view.render()
             @play_area = @$('#play-area')
             @play_area.append @place_view.el
-            @edit()
 
         set_camera_focus: (model) ->
             @camera_focus.unbind('change:position', @center_camera) if @camera_focus
@@ -208,23 +208,26 @@ define [
                 event.preventDefault()
                 @editing = yes
 
-            $(window).mouseup (event) =>
+            $(@play_area).mouseup (event) =>
                 event.preventDefault()
+                @add_tree_from_mouse event
                 @editing = no
 
             $(@play_area).mousemove (event) =>
                 event.preventDefault()
-                if @editing
-                    picker_in_window = $V event.clientX, $(window).height() - event.clientY
-                    play_area_offset = @play_area.offset()
-                    play_area_origin = $V play_area_offset.left, $(window).height() - (@play_area.height() + play_area_offset.top)
-                    picker_in_play_area = picker_in_window.minus(play_area_origin)
-                    place_origin_in_play_area = @get_window_center().minus(@focus)
-                    picker_in_place = picker_in_play_area.minus(place_origin_in_play_area)
-                    @model.current_place.obstacles.add position:picker_in_place
-                    #node = $('<div class="tree"></div>')
-                    #node.css picker_in_place.as_css()
-                    #$(@place_view.el).append node
+                #if @editing
+
+        add_tree_from_mouse: (event) ->
+            picker_in_window = $V event.clientX, $(window).height() - event.clientY
+            play_area_offset = @play_area.offset()
+            play_area_origin = $V play_area_offset.left, $(window).height() - (@play_area.height() + play_area_offset.top)
+            picker_in_play_area = picker_in_window.minus(play_area_origin)
+            place_origin_in_play_area = @get_window_center().minus(@focus)
+            picker_in_place = picker_in_play_area.minus(place_origin_in_play_area)
+            @model.current_place.obstacles.add position:picker_in_place
+            #node = $('<div class="tree"></div>')
+            #node.css picker_in_place.as_css()
+            #$(@place_view.el).append node
 
     PlaceView = backbone.View.extend
         className:'place'
