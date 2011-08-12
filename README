@@ -1,0 +1,7 @@
+Lots of experimenting going on here:
+Trying out server/client code sharing using requirejs
+Writing everything in coffeescript with the requirejs coffeescript plugin
+Trying out backbone.js to organize the code
+Using Socket.io for multiplayer
+Using features built into postgres for user authentication, guids, etc
+Allowing players to collaboratively edit the world
